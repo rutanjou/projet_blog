@@ -1,43 +1,45 @@
 (function(){
-    console.log('hello world')
     var app = {
-        menu : null,
-        init(){
-            this.requestMenu();
+        menu:null, 
+        path: null,
+        init : function(){
+            this.getMenu.call(this);
+    
         },
-        listener(){
-            $('a').on('click',app.seeArticle);
+        getMenu : function(){
+            $.ajax({
+                url:'http://localhost:2000/menu.json'
+            }).done(this.doneRequestMenu.bind(this))
         },
-        generateMenu(){     
-            for(var i=0; i < app.menu.menu.length;i++){
-                $('ul').append('<li ><a data-article='+i+'  href="#">'+ app.menu.menu[i].title +'</a></li>');
+        doneRequestMenu:function(resp){
+            this.menu = resp;   
+            this.makeMenu.call(this);
+            this.listener.call(this)  
+        }, 
+        makeMenu:function(){
+            for ( var i = 0 ; i < this.menu.menu.length; i++ ){
+                $("#menu").append("<li><a class='blog' href='#' data-path='"+this.menu.menu[i].path+"'>" + this.menu.menu[i].title + "</a></li>"); 
             }
+        
         },
-        seeArticle(){
-            console.log('lala')
-            app.requestArticleMd(app.menu.menu[$(this).data('article')].path);
+        listener:function(){
+            $('.blog').on('click',this.updateView);
         },
-        requestArticleMd(article){
+        updateView:function(){
+            app.path=$(this).data('path');
+            app.getArticle();
+        },
+        getArticle:function(){
             $.ajax({
-                url:'http://192.168.2.33:2000/'+article
-            }).done(function(data){
-                var converter = new showdown.Converter(),
-                html = converter.makeHtml(data);
-                $('#md').html(html)
-            })
+                url:'http://localhost:2000/'+app.path
+            }).done(app.doneRequestArticle)
         },
-        requestMenu(){
-            $.ajax({
-                url:'http://192.168.2.33:2000/menu.json'
-            }).done(function(data){
-                
-                app.menu = data
-                console.log(data)
-                app.generateMenu();
-                app.listener();
-            })
+        doneRequestArticle:function(resp){
+                console.log(resp);
+                var converter = new showdown.Converter();
+                var html = converter.makeHtml(resp);
+                $('#md').html(html);
         }
     }
-    
-    app.init()
+    app.init();
 })();
